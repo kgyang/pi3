@@ -8,3 +8,4 @@ make -C DHT $TARGET
 	cd $(dirname $0)
 	rm -rf lib bin
 }
+exit 0
