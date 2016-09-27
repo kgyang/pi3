@@ -1,33 +1,30 @@
 .PHONY: clean all
 
-CC = gcc
-AR = ar
+CC := gcc
+AR := ar
 
-OBJ_DIR = obj
-LIB_DIR = lib
+OBJ_DIR := obj
+LIB_DIR := ../lib
+dummy := $(shell mkdir -p $(OBJ_DIR) $(LIB_DIR))
 
-vpath $(LIB_DIR)
-vpath $(OBJ_DIR)
+SRCS = $(wildcard *.c)
+OBJS = $(foreach obj, $(patsubst %.c, %.o, $(SRCS)), $(OBJ_DIR)/$(obj))
 
-LIB_SRC_FILES = bcm2835.c
-LIB_OBJ_FILES = $(notdir $(patsubst %.c, %.o, $(LIB_SRC_FILES)))
+LIB = $(LIB_DIR)/libbcm2835.a
 
-BCM2835_LIB = libbcm2835.a
+CFLAGS = -g
 
-CFLAGS = 
+all: $(LIB)
 
-all: $(BCM2835_LIB)
+$(LIB): $(OBJS)
+	$(AR) cr $@ $^
 
-$(BCM2835_LIB): $(LIB_OBJ_FILES)
-	mkdir -p $(LIB_DIR);\
-	cd $(OBJ_DIR);\
-	$(AR) crs $@ $^;\
-	cp $@ ../$(LIB_DIR)
+test: $(SRCS)
+	$(CC) -DBCM2835_TEST $< -o $@
 
-%.o: %.c
-	mkdir -p $(OBJ_DIR);\
-	$(CC) -c $(CFLAGS) $< -o $(OBJ_DIR)/$@
+$(OBJ_DIR)/%.o: %.c
+	$(CC) -c $(CFLAGS) -o $@ $< 
 
 clean:
-	rm -rf $(LIB_DIR) $(OBJ_DIR)
+	rm -rf $(LIB) $(OBJ_DIR) test
 

@@ -1,30 +1,29 @@
 .PHONY: clean all
 
-CC = gcc
+CC := gcc
 
-OBJ_DIR = obj
-BIN_DIR = bin
+OBJ_DIR := obj
+BIN_DIR := ../bin
+dummy := $(shell mkdir -p $(OBJ_DIR) $(BIN_DIR))
 
-vpath $(BIN_DIR)
-vpath $(OBJ_DIR)
+SRCS = $(wildcard *.c)
+OBJS = $(foreach obj, $(patsubst %.c, %.o, $(SRCS)), $(OBJ_DIR)/$(obj))
 
-SRC_FILES = DHT.c
-OBJ_FILES = $(notdir $(patsubst %.c, %.o, $(SRC_FILES)))
+BIN = $(BIN_DIR)/DHT
 
-BIN = DHT
+LIB_DIR := ../lib
+BCM_DIR := ../bcm2835
 
-CFLAGS = -g -I../bcm2835/
-LDFLAGS = -static -L../bcm2835/lib/ -lbcm2835
+CFLAGS = -g -I$(BCM_DIR)
+LDFLAGS = -L$(LIB_DIR)
 
 all: $(BIN)
 
-$(BIN): $(OBJ_FILES)
-	mkdir -p $(BIN_DIR);\
-	$(CC) $(LDFLAGS) -o $(BIN_DIR)/$@ $(OBJ_DIR)/$^
+$(BIN): $(OBJS)
+	$(CC) $(LDFLAGS) $^ -lbcm2835 -o $@
 
-%.o: %.c
-	mkdir -p $(OBJ_DIR);\
-	$(CC) $(CFLAGS) -c $< -o $(OBJ_DIR)/$@
+$(OBJ_DIR)/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BIN_DIR) $(OBJ_DIR)
+	rm -rf $(BIN) $(OBJ_DIR)

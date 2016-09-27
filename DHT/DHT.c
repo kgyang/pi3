@@ -16,7 +16,7 @@ typedef enum {
     DHT21   = 21,
     DHT22   = 22,
     AM2302  = 22,
-} DHT_Type ;
+} DHT_Type;
 
 typedef enum {
     DHT_ERROR_NONE = 0,
