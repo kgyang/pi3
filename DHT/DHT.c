@@ -34,11 +34,11 @@ typedef enum {
 int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
 {
     int count;
-    int stat_wait_ACK_start[2] = {0,0};
-    int stat_ACK_width[2] = {0,0};
-    int stat_data_start_width[2] = {0,0};
-    int stat_bit_start_width[2] = {0,0};
-    int stat_bit_width[2] = {0,0};
+    int stat_wait_ACK_start[2] = {9999,0};
+    int stat_ACK_width[2] = {9999,0};
+    int stat_data_start_width[2] = {9999,0};
+    int stat_bit_start_width[2] = {9999,0};
+    int stat_bit_width[2] = {9999,0};
     int bit;
     char sum;
     char data[5] = {0,0,0,0,0};
@@ -49,9 +49,9 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     // If always signal high-voltage-level, it means DHT22 is not 
     // working properly, plesee check the electrical connection status.
     DHT_GPIO_OUTPUT;
-    DHT_wait_ms(18); //18 milliseconds
+    DHT_wait_ms(1); //18 milliseconds
     DHT_GPIO_CLR; //MCU send out start signal to DHT22
-    DHT_wait_ms(18); //18 ms
+    DHT_wait_ms(1); //18 ms
     DHT_GPIO_SET; //MCU pull up
     DHT_wait_us(40); //40us
     DHT_GPIO_INPUT;
@@ -61,7 +61,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     count = 0;
     do
     {        
-        if (count++ > 40)
+        if (count++ > 10)
 	{     // (Spec is 80 us, 40*2 == 80us
             fprintf(stderr,"not present ACK start\n");
             return DHT_ERROR_NOT_PRESENT;;
@@ -91,7 +91,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     count = 0;
     do
     {        
-        if (count++ > 40)
+        if (count++ > 50)
 	{     // (Spec is 80 us, 40*2 == 80us
             fprintf(stderr,"no data sent\n");
             return DHT_ERROR_NOT_PRESENT;;
@@ -116,7 +116,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
 	{        
             if (count++ > 40)
 	    {     // Spec is 50 us, 25*2 == 50us
-                fprintf(stderr,"bit %d start timeout\n", i);
+                fprintf(stderr,"bit %d start timeout\n", bit);
                 return DHT_ERROR_TIMEOUT;
             }
             DHT_wait_us(2);
@@ -129,9 +129,9 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
         count = 0;
         do
 	{
-            if (count++ > 100)
+            if (count++ > 50)
 	    {     // Spec is 80 us, 40*2 == 80us
-                fprintf(stderr,"bit %d width timeout\n", i);
+                fprintf(stderr,"bit %d width timeout\n", bit);
                 return DHT_ERROR_TIMEOUT;
             }
             DHT_wait_us(2);
@@ -140,7 +140,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
 	stat_bit_width[0] = MIN(stat_bit_width[0], count);
 	stat_bit_width[1] = MAX(stat_bit_width[1], count);
         
-        if(count > 30)
+        if(count > 20)
 	{
 	    // connt > 20 is a 1(20*2 = 40us)
             data[bit/8] |= (1 << (7 - bit%8)); // start from MSB to LSB
@@ -177,7 +177,6 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
 
         case DHT21:
         case DHT22:
-        case AM2302:
             *humidity = (float)((data[0] << 8)+data[1])/10;
             if((data[2]&0x80) == 0)
             {
@@ -205,22 +204,22 @@ int main(int argc, char* argv[])
     if (!bcm2835_init())
     {
         fprintf(stderr,"bcm init fail\n");
-	exit(1);
+	return(1);
     }
 
     DHT_Error ret = DHT_read(type, pin, &humidity, &temperature);
     if (ret != DHT_ERROR_NONE){
         bcm2835_close();
-        exit(1);
+        return(1);
     }
 
     if (!bcm2835_close())
     {
         fprintf(stderr,"bcm close fail\n");
-	exit(1);
+	return(1);
     }
 
     printf("temperature %.2f humidity %.2f\n", temperature, humidity);
 
-    exit(0);
+    return(0);
 }

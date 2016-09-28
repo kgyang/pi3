@@ -1,0 +1,13 @@
+wait ACK 1 1
+ACK width 26 26
+data start 39 39
+bit start 17 31
+bit width 6 37
+
+wait ACK 1 1
+ACK width 28 28
+data start 38 38
+bit start 19 32
+bit width 2 37
+temperature 27.20 humidity 77.00
+
