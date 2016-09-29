@@ -12,9 +12,6 @@
 #define DHT_GPIO_HIGH HIGH
 #define DHT_GPIO_LOW LOW
 
-#define MAX(a,b) (((a) > (b)) ? (a) : (b))
-#define MIN(a,b) (((a) < (b)) ? (a) : (b))
-
 typedef enum {
     DHT11   = 11,
     DHT21   = 21,
@@ -34,14 +31,14 @@ typedef enum {
 int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
 {
     int count;
-    int stat_wait_ACK_start[2] = {9999,0};
-    int stat_ACK_width[2] = {9999,0};
-    int stat_data_start_width[2] = {9999,0};
-    int stat_bit_start_width[2] = {9999,0};
-    int stat_bit_width[2] = {9999,0};
+    int wait_ack_count;
+    int ack_count;
+    int data_ready_count;
+    int bit_start_count[40];
+    int bit_level_count[40];
     int bit;
-    char sum;
-    char data[5] = {0,0,0,0,0};
+    unsigned char sum;
+    unsigned char data[5] = {0,0,0,0,0};
 
     // Send the activate pulse
     // Step 1: MCU send out start signal to DHT22 and DHT22 send
@@ -49,58 +46,52 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     // If always signal high-voltage-level, it means DHT22 is not 
     // working properly, plesee check the electrical connection status.
     DHT_GPIO_OUTPUT;
-    DHT_wait_ms(1); //18 milliseconds
+    DHT_wait_us(10); //20 us
     DHT_GPIO_CLR; //MCU send out start signal to DHT22
-    DHT_wait_ms(1); //18 ms
+    DHT_wait_ms(1); //1 ms
     DHT_GPIO_SET; //MCU pull up
-    DHT_wait_us(40); //40us
+    DHT_wait_us(10); //20us
     DHT_GPIO_INPUT;
     //DHT_GPIO_PUDUP;
 
     // Find the start of the ACK Pulse
     count = 0;
-    do
+    while(DHT_GPIO_READ == DHT_GPIO_HIGH)     // Exit on DHT22 pull low within 80us 
     {        
         if (count++ > 10)
-	{     // (Spec is 80 us, 40*2 == 80us
+	{
             fprintf(stderr,"not present ACK start\n");
             return DHT_ERROR_NOT_PRESENT;;
         }
         DHT_wait_us(2);
     }
-    while(DHT_GPIO_READ == DHT_GPIO_HIGH);     // Exit on DHT22 pull low within 80us 
-    stat_wait_ACK_start[0] = MIN(stat_wait_ACK_start[0], count);
-    stat_wait_ACK_start[1] = MAX(stat_wait_ACK_start[1], count);
+    wait_ack_count = count;
     
     // Find the last of the ACK Pulse
     count = 0;
-    do
+    while(DHT_GPIO_READ == DHT_GPIO_LOW)     // Exit on DHT22 pull High within 80us 
     {        
         if (count++ > 40)
-	{     // (Spec is 80 us, 40*2 == 80us
+	{
             fprintf(stderr,"not present ACK last\n");
             return DHT_ERROR_NOT_PRESENT;;
         }
         DHT_wait_us(2);
     }
-    while(DHT_GPIO_READ == DHT_GPIO_LOW);     // Exit on DHT22 pull High within 80us 
-    stat_ACK_width[0] = MIN(stat_ACK_width[0], count);
-    stat_ACK_width[1] = MAX(stat_ACK_width[1], count);
+    ack_count = count;
     
     // wait DHT pull low to sent the first bit.
     count = 0;
-    do
+    while(DHT_GPIO_READ == DHT_GPIO_HIGH)     // Exit on DHT22 pull low  within 80us 
     {        
         if (count++ > 50)
-	{     // (Spec is 80 us, 40*2 == 80us
+	{
             fprintf(stderr,"no data sent\n");
             return DHT_ERROR_NOT_PRESENT;;
         }
         DHT_wait_us(2);
     }
-    while(DHT_GPIO_READ == DHT_GPIO_HIGH);     // Exit on DHT22 pull low  within 80us 
-    stat_data_start_width[0] = MIN(stat_data_start_width[0], count);
-    stat_data_start_width[1] = MAX(stat_data_start_width[1], count);
+    data_ready_count = count;
     
      
     // Reading the 40 bit data stream
@@ -112,34 +103,30 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     {
         // Getting start bit signal 
         count = 0;
-        do
+	while(DHT_GPIO_READ == DHT_GPIO_LOW)        // Exit on high volage within 50us
 	{        
             if (count++ > 40)
-	    {     // Spec is 50 us, 25*2 == 50us
+	    {
                 fprintf(stderr,"bit %d start timeout\n", bit);
                 return DHT_ERROR_TIMEOUT;
             }
             DHT_wait_us(2);
         }
-	while(DHT_GPIO_READ == DHT_GPIO_LOW);        // Exit on high volage within 50us
-	stat_bit_start_width[0] = MIN(stat_bit_start_width[0], count);
-	stat_bit_start_width[1] = MAX(stat_bit_start_width[1], count);
+	bit_start_count[bit] = count;
         
         // Measure the width of the data pulse
         count = 0;
-        do
+	while(DHT_GPIO_READ == DHT_GPIO_HIGH)        // Exit on high volage within 50us
 	{
             if (count++ > 50)
-	    {     // Spec is 80 us, 40*2 == 80us
+	    {
                 fprintf(stderr,"bit %d width timeout\n", bit);
                 return DHT_ERROR_TIMEOUT;
             }
             DHT_wait_us(2);
         }
-	while(DHT_GPIO_READ == DHT_GPIO_HIGH);        // Exit on high volage within 50us
-	stat_bit_width[0] = MIN(stat_bit_width[0], count);
-	stat_bit_width[1] = MAX(stat_bit_width[1], count);
-        
+	bit_level_count[bit] = count;
+
         if(count > 20)
 	{
 	    // connt > 20 is a 1(20*2 = 40us)
@@ -156,16 +143,14 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     }
     else
     {
-        fprintf(stderr, "wait ACK %d %d\n",
-	        stat_wait_ACK_start[0], stat_wait_ACK_start[1]);
-        fprintf(stderr, "ACK width %d %d\n",
-	        stat_ACK_width[0], stat_ACK_width[1]);
-        fprintf(stderr, "data start %d %d\n",
-	        stat_data_start_width[0], stat_data_start_width[1]);
-        fprintf(stderr, "bit start %d %d\n",
-	        stat_bit_start_width[0], stat_bit_start_width[1]);
-        fprintf(stderr, "bit width %d %d\n",
-	        stat_bit_width[0], stat_bit_width[1]);
+        fprintf(stderr, "wait ack   %2d\n", wait_ack_count);
+        fprintf(stderr, "ack        %2d\n", ack_count);
+        fprintf(stderr, "data ready %2d\n", data_ready_count);
+	for (bit = 0; bit < 40; bit++)
+	{
+            fprintf(stderr, "bit %2d start %2d level %2d\n",
+	            bit, bit_start_count[bit], bit_level_count[bit]);
+        }
     }
 
     switch(type)
@@ -208,7 +193,8 @@ int main(int argc, char* argv[])
     }
 
     DHT_Error ret = DHT_read(type, pin, &humidity, &temperature);
-    if (ret != DHT_ERROR_NONE){
+    if (ret != DHT_ERROR_NONE)
+    {
         bcm2835_close();
         return(1);
     }
@@ -223,3 +209,4 @@ int main(int argc, char* argv[])
 
     return(0);
 }
+
