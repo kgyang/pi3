@@ -11,3 +11,92 @@ bit start 19 32
 bit width 2 37
 temperature 27.20 humidity 77.00
 
+temperature 29.40 humidity 78.30
+wait ack    5
+ack        38
+data ready 37
+bit  0 start 26 level 11
+bit  1 start 26 level 10
+bit  2 start 25 level 12
+bit  3 start 25 level 12
+bit  4 start 21 level 11
+bit  5 start 25 level 12
+bit  6 start 26 level 34
+bit  7 start 26 level 35
+bit  8 start 32 level 11
+bit  9 start 26 level 12
+bit 10 start 23 level 11
+bit 11 start 25 level 11
+bit 12 start 24 level 33
+bit 13 start 25 level 33
+bit 14 start 26 level 33
+bit 15 start 23 level 11
+bit 16 start 32 level 10
+bit 17 start 25 level 11
+bit 18 start 26 level 11
+bit 19 start 22 level 11
+bit 20 start 26 level 10
+bit 21 start 18 level 11
+bit 22 start 23 level 12
+bit 23 start 25 level 34
+bit 24 start 33 level 12
+bit 25 start 25 level 12
+bit 26 start 24 level 35
+bit 27 start 26 level 12
+bit 28 start 25 level 11
+bit 29 start 26 level 35
+bit 30 start 26 level 30
+bit 31 start 24 level 11
+bit 32 start 31 level 12
+bit 33 start 25 level 10
+bit 34 start 23 level 33
+bit 35 start 25 level 31
+bit 36 start 26 level 32
+bit 37 start 25 level 10
+bit 38 start 23 level 12
+bit 39 start 25 level 12
+bit 36 width timeout
+
+wait ack    6
+ack        38
+data ready 37
+bit  0 start 22 level 11
+bit  1 start 24 level 11
+bit  2 start 24 level 11
+bit  3 start 24 level 11
+bit  4 start 26 level 12
+bit  5 start 24 level 10
+bit  6 start 26 level 30
+bit  7 start 26 level 34
+bit  8 start 33 level 11
+bit  9 start 26 level  9
+bit 10 start 21 level 12
+bit 11 start 25 level 33
+bit 12 start 25 level 10
+bit 13 start 26 level 11
+bit 14 start 26 level 11
+bit 15 start 26 level 11
+bit 16 start 30 level 12
+bit 17 start 25 level 12
+bit 18 start 25 level 12
+bit 19 start 23 level 12
+bit 20 start 22 level  8
+bit 21 start 25 level 12
+bit 22 start 21 level 12
+bit 23 start 24 level 35
+bit 24 start 30 level 10
+bit 25 start 23 level 11
+bit 26 start 22 level 31
+bit 27 start 21 level 12
+bit 28 start 26 level 10
+bit 29 start 24 level 33
+bit 30 start 24 level 35
+bit 31 start 24 level 11
+bit 32 start 31 level 11
+bit 33 start 24 level  9
+bit 34 start 26 level 31
+bit 35 start 24 level 34
+bit 36 start 25 level 35
+bit 37 start 22 level 10
+bit 38 start 23 level 29
+bit 39 start 23 level  9

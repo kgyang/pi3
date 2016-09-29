@@ -27,6 +27,7 @@ typedef enum {
     DHT_ERROR_CHECKSUM = 4,
 } DHT_Error;
 
+int DHT_debug = 0;
 
 int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
 {
@@ -71,7 +72,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     count = 0;
     while(DHT_GPIO_READ == DHT_GPIO_LOW)     // Exit on DHT22 pull High within 80us 
     {        
-        if (count++ > 40)
+        if (count++ > 50)
 	{
             fprintf(stderr,"not present ACK last\n");
             return DHT_ERROR_NOT_PRESENT;;
@@ -143,13 +144,16 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     }
     else
     {
-        fprintf(stderr, "wait ack   %2d\n", wait_ack_count);
-        fprintf(stderr, "ack        %2d\n", ack_count);
-        fprintf(stderr, "data ready %2d\n", data_ready_count);
-	for (bit = 0; bit < 40; bit++)
-	{
-            fprintf(stderr, "bit %2d start %2d level %2d\n",
-	            bit, bit_start_count[bit], bit_level_count[bit]);
+        if (DHT_debug)
+        {
+            fprintf(stderr, "wait ack   %2d\n", wait_ack_count);
+            fprintf(stderr, "ack        %2d\n", ack_count);
+            fprintf(stderr, "data ready %2d\n", data_ready_count);
+	    for (bit = 0; bit < 40; bit++)
+	    {
+                fprintf(stderr, "bit %2d start %2d level %2d\n",
+	                bit, bit_start_count[bit], bit_level_count[bit]);
+            }
         }
     }
 

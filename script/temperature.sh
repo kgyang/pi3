@@ -13,7 +13,6 @@ do
 		echo $res
 		exit 0
 	else
-		echo $res >&2
 		sleep 2
 	fi
 done
