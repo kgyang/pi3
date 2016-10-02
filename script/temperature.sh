@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SENSOR=/home/pi/pi3/bin/DHT
+SENSOR=$HOME/pi3/bin/DHT
 
 [ -f $SENSOR ] || exit 1
 
