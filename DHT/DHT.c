@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
 #include <bcm2835.h>
 
 #define DHT_GPIO_OUTPUT bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_OUTP) 
@@ -25,6 +27,7 @@ typedef enum {
     DHT_ERROR_NOT_PRESENT =2,
     DHT_ERROR_TIMEOUT = 3,
     DHT_ERROR_CHECKSUM = 4,
+    DHT_ERROR_INVALID_PARAM = 5,
 } DHT_Error;
 
 int DHT_debug = 0;
@@ -61,8 +64,8 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     {        
         if (count++ > 10)
 	{
-            fprintf(stderr,"not present ACK start\n");
-            return DHT_ERROR_NOT_PRESENT;;
+            fprintf(stderr,"no ACK\n");
+            return DHT_ERROR_NOT_PRESENT;
         }
         DHT_wait_us(2);
     }
@@ -74,8 +77,8 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     {        
         if (count++ > 50)
 	{
-            fprintf(stderr,"not present ACK last\n");
-            return DHT_ERROR_NOT_PRESENT;;
+            fprintf(stderr,"ACK pulse too long\n");
+            return DHT_ERROR_NOT_PRESENT;
         }
         DHT_wait_us(2);
     }
@@ -88,7 +91,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
         if (count++ > 50)
 	{
             fprintf(stderr,"no data sent\n");
-            return DHT_ERROR_NOT_PRESENT;;
+            return DHT_ERROR_NOT_PRESENT;
         }
         DHT_wait_us(2);
     }
@@ -184,11 +187,91 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     return DHT_ERROR_NONE;
 }
 
+DHT_Error DHT_boardPinToBcmPin(int board_pin, RPiGPIOPin* bcm_pin)
+{
+    int bcm_pins[40+1];
+
+    memset(bcm_pins, -1, sizeof(bcm_pins));
+
+    bcm_pins[3] = RPI_BPLUS_GPIO_J8_03;
+    bcm_pins[5] = RPI_BPLUS_GPIO_J8_05;
+    bcm_pins[7] = RPI_BPLUS_GPIO_J8_07;
+    bcm_pins[8] = RPI_BPLUS_GPIO_J8_08;
+    bcm_pins[10] = RPI_BPLUS_GPIO_J8_10;
+    bcm_pins[11] = RPI_BPLUS_GPIO_J8_11;
+    bcm_pins[12] = RPI_BPLUS_GPIO_J8_12;
+    bcm_pins[13] = RPI_BPLUS_GPIO_J8_13;
+    bcm_pins[15] = RPI_BPLUS_GPIO_J8_15;
+    bcm_pins[16] = RPI_BPLUS_GPIO_J8_16;
+    bcm_pins[18] = RPI_BPLUS_GPIO_J8_18;
+    bcm_pins[19] = RPI_BPLUS_GPIO_J8_19;
+    bcm_pins[21] = RPI_BPLUS_GPIO_J8_21;
+    bcm_pins[22] = RPI_BPLUS_GPIO_J8_22;
+    bcm_pins[23] = RPI_BPLUS_GPIO_J8_23;
+    bcm_pins[24] = RPI_BPLUS_GPIO_J8_24;
+    bcm_pins[26] = RPI_BPLUS_GPIO_J8_26;
+    bcm_pins[29] = RPI_BPLUS_GPIO_J8_29;
+    bcm_pins[31] = RPI_BPLUS_GPIO_J8_31;
+    bcm_pins[32] = RPI_BPLUS_GPIO_J8_32;
+    bcm_pins[33] = RPI_BPLUS_GPIO_J8_33;
+    bcm_pins[35] = RPI_BPLUS_GPIO_J8_35;
+    bcm_pins[36] = RPI_BPLUS_GPIO_J8_36;
+    bcm_pins[37] = RPI_BPLUS_GPIO_J8_37;
+    bcm_pins[38] = RPI_BPLUS_GPIO_J8_38;
+    bcm_pins[40] = RPI_BPLUS_GPIO_J8_40;
+
+    if (board_pin < 1 || board_pin > 40)
+    {
+        return DHT_ERROR_INVALID_PARAM;
+    }
+
+    if (bcm_pins[board_pin] == -1)
+    {
+        return DHT_ERROR_INVALID_PARAM;
+    }
+
+    *bcm_pin = bcm_pins[board_pin];
+
+    return DHT_ERROR_NONE;
+}
+
+void usage(void)
+{
+    fprintf(stderr, "DHT <bcm|board> <pin>\n");
+    fprintf(stderr, "bcm pin range: 2-26\n");
+    fprintf(stderr, "board pin range: 1-40\n");
+}
+
 int main(int argc, char* argv[])
 {
     DHT_Type type = DHT22;
     RPiGPIOPin pin = RPI_BPLUS_GPIO_J8_03;
     float humidity = 0, temperature = 0;
+
+    if (argc != 3)
+    {
+        usage();
+        return DHT_ERROR_INVALID_PARAM;
+    }
+
+    if (strcasecmp(argv[1], "bcm") == 0)
+    {
+        pin = (RPiGPIOPin)atoi(argv[2]);
+        if (pin < 2 || pin > 26)
+        {
+            usage();
+            return DHT_ERROR_INVALID_PARAM;
+        }
+    }
+
+    if (strcasecmp(argv[1], "board") == 0)
+    {
+        if (DHT_boardPinToBcmPin(atoi(argv[2]), &pin) != DHT_ERROR_NONE)
+        {
+            usage();
+            return DHT_ERROR_INVALID_PARAM;
+        }
+    }
 
     if (!bcm2835_init())
     {
