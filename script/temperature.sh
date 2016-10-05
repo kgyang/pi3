@@ -8,13 +8,13 @@ SENSOR_BOARD_PIN=3
 tries=0
 while ((tries++ < 5))
 do
-	res=$(sudo $SENSOR board $SENSOR_BOARD_PIN)
+	res=$($SENSOR board $SENSOR_BOARD_PIN)
 	if [ $? -eq 0 ] 
 	then
 		echo $res
 		exit 0
 	else
-		sleep 2
+		sleep 5
 	fi
 done
 
