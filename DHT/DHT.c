@@ -35,11 +35,11 @@ int DHT_debug = 0;
 int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
 {
     int count;
-    int wait_ack_count;
-    int ack_count;
-    int data_ready_count;
-    int bit_start_count[40];
-    int bit_level_count[40];
+    int wait_ack_us;
+    int ack_us;
+    int data_ready_us;
+    int bit_start_us[40];
+    int bit_level_us[40];
     int bit;
     unsigned char sum;
     unsigned char data[5] = {0,0,0,0,0};
@@ -50,11 +50,11 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     // If always signal high-voltage-level, it means DHT22 is not 
     // working properly, plesee check the electrical connection status.
     DHT_GPIO_OUTPUT;
-    DHT_wait_us(10); //20 us
+    DHT_wait_us(10); //10 us
     DHT_GPIO_CLR; //MCU send out start signal to DHT22
     DHT_wait_ms(1); //1 ms
     DHT_GPIO_SET; //MCU pull up
-    DHT_wait_us(10); //20us
+    DHT_wait_us(10); //10us
     DHT_GPIO_INPUT;
     //DHT_GPIO_PUDUP;
 
@@ -69,7 +69,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
         }
         DHT_wait_us(2);
     }
-    wait_ack_count = count;
+    wait_ack_us = count*2;
     
     // Find the last of the ACK Pulse
     count = 0;
@@ -82,7 +82,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
         }
         DHT_wait_us(2);
     }
-    ack_count = count;
+    ack_us = count*2;
     
     // wait DHT pull low to sent the first bit.
     count = 0;
@@ -95,7 +95,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
         }
         DHT_wait_us(2);
     }
-    data_ready_count = count;
+    data_ready_us = count*2;
     
      
     // Reading the 40 bit data stream
@@ -116,7 +116,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
             }
             DHT_wait_us(2);
         }
-	bit_start_count[bit] = count;
+	bit_start_us[bit] = count*2;
         
         // Measure the width of the data pulse
         count = 0;
@@ -129,7 +129,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
             }
             DHT_wait_us(2);
         }
-	bit_level_count[bit] = count;
+	bit_level_us[bit] = count*2;
 
         if(count > 20)
 	{
@@ -149,13 +149,13 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     {
         if (DHT_debug)
         {
-            fprintf(stderr, "wait ack   %2d\n", wait_ack_count);
-            fprintf(stderr, "ack        %2d\n", ack_count);
-            fprintf(stderr, "data ready %2d\n", data_ready_count);
+            fprintf(stderr, "wait ack   %2d\n", wait_ack_us);
+            fprintf(stderr, "ack        %2d\n", ack_us);
+            fprintf(stderr, "data ready %2d\n", data_ready_us);
 	    for (bit = 0; bit < 40; bit++)
 	    {
                 fprintf(stderr, "bit %2d start %2d level %2d\n",
-	                bit, bit_start_count[bit], bit_level_count[bit]);
+	                bit, bit_start_us[bit], bit_level_us[bit]);
             }
         }
     }
@@ -189,53 +189,53 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
 
 DHT_Error DHT_boardPinToBcmPin(int board_pin, RPiGPIOPin* bcm_pin)
 {
-    int bcm_pins[40+1];
+    int pinmap[40+1];
 
-    memset(bcm_pins, -1, sizeof(bcm_pins));
+    memset(pinmap, -1, sizeof(pinmap));
 
-    bcm_pins[3] = RPI_BPLUS_GPIO_J8_03;
-    bcm_pins[5] = RPI_BPLUS_GPIO_J8_05;
-    bcm_pins[7] = RPI_BPLUS_GPIO_J8_07;
-    bcm_pins[8] = RPI_BPLUS_GPIO_J8_08;
-    bcm_pins[10] = RPI_BPLUS_GPIO_J8_10;
-    bcm_pins[11] = RPI_BPLUS_GPIO_J8_11;
-    bcm_pins[12] = RPI_BPLUS_GPIO_J8_12;
-    bcm_pins[13] = RPI_BPLUS_GPIO_J8_13;
-    bcm_pins[15] = RPI_BPLUS_GPIO_J8_15;
-    bcm_pins[16] = RPI_BPLUS_GPIO_J8_16;
-    bcm_pins[18] = RPI_BPLUS_GPIO_J8_18;
-    bcm_pins[19] = RPI_BPLUS_GPIO_J8_19;
-    bcm_pins[21] = RPI_BPLUS_GPIO_J8_21;
-    bcm_pins[22] = RPI_BPLUS_GPIO_J8_22;
-    bcm_pins[23] = RPI_BPLUS_GPIO_J8_23;
-    bcm_pins[24] = RPI_BPLUS_GPIO_J8_24;
-    bcm_pins[26] = RPI_BPLUS_GPIO_J8_26;
-    bcm_pins[29] = RPI_BPLUS_GPIO_J8_29;
-    bcm_pins[31] = RPI_BPLUS_GPIO_J8_31;
-    bcm_pins[32] = RPI_BPLUS_GPIO_J8_32;
-    bcm_pins[33] = RPI_BPLUS_GPIO_J8_33;
-    bcm_pins[35] = RPI_BPLUS_GPIO_J8_35;
-    bcm_pins[36] = RPI_BPLUS_GPIO_J8_36;
-    bcm_pins[37] = RPI_BPLUS_GPIO_J8_37;
-    bcm_pins[38] = RPI_BPLUS_GPIO_J8_38;
-    bcm_pins[40] = RPI_BPLUS_GPIO_J8_40;
+    pinmap[3] = RPI_BPLUS_GPIO_J8_03;
+    pinmap[5] = RPI_BPLUS_GPIO_J8_05;
+    pinmap[7] = RPI_BPLUS_GPIO_J8_07;
+    pinmap[8] = RPI_BPLUS_GPIO_J8_08;
+    pinmap[10] = RPI_BPLUS_GPIO_J8_10;
+    pinmap[11] = RPI_BPLUS_GPIO_J8_11;
+    pinmap[12] = RPI_BPLUS_GPIO_J8_12;
+    pinmap[13] = RPI_BPLUS_GPIO_J8_13;
+    pinmap[15] = RPI_BPLUS_GPIO_J8_15;
+    pinmap[16] = RPI_BPLUS_GPIO_J8_16;
+    pinmap[18] = RPI_BPLUS_GPIO_J8_18;
+    pinmap[19] = RPI_BPLUS_GPIO_J8_19;
+    pinmap[21] = RPI_BPLUS_GPIO_J8_21;
+    pinmap[22] = RPI_BPLUS_GPIO_J8_22;
+    pinmap[23] = RPI_BPLUS_GPIO_J8_23;
+    pinmap[24] = RPI_BPLUS_GPIO_J8_24;
+    pinmap[26] = RPI_BPLUS_GPIO_J8_26;
+    pinmap[29] = RPI_BPLUS_GPIO_J8_29;
+    pinmap[31] = RPI_BPLUS_GPIO_J8_31;
+    pinmap[32] = RPI_BPLUS_GPIO_J8_32;
+    pinmap[33] = RPI_BPLUS_GPIO_J8_33;
+    pinmap[35] = RPI_BPLUS_GPIO_J8_35;
+    pinmap[36] = RPI_BPLUS_GPIO_J8_36;
+    pinmap[37] = RPI_BPLUS_GPIO_J8_37;
+    pinmap[38] = RPI_BPLUS_GPIO_J8_38;
+    pinmap[40] = RPI_BPLUS_GPIO_J8_40;
 
     if (board_pin < 1 || board_pin > 40)
     {
         return DHT_ERROR_INVALID_PARAM;
     }
 
-    if (bcm_pins[board_pin] == -1)
+    if (pinmap[board_pin] == -1)
     {
         return DHT_ERROR_INVALID_PARAM;
     }
 
-    *bcm_pin = bcm_pins[board_pin];
+    *bcm_pin = pinmap[board_pin];
 
     return DHT_ERROR_NONE;
 }
 
-void usage(void)
+void DHT_usage(void)
 {
     fprintf(stderr, "DHT <bcm|board> <pin>\n");
     fprintf(stderr, "bcm pin range: 2-26\n");
@@ -250,7 +250,7 @@ int main(int argc, char* argv[])
 
     if (argc != 3)
     {
-        usage();
+        DHT_usage();
         return DHT_ERROR_INVALID_PARAM;
     }
 
@@ -259,7 +259,7 @@ int main(int argc, char* argv[])
         pin = (RPiGPIOPin)atoi(argv[2]);
         if (pin < 2 || pin > 26)
         {
-            usage();
+            DHT_usage();
             return DHT_ERROR_INVALID_PARAM;
         }
     }
@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
     {
         if (DHT_boardPinToBcmPin(atoi(argv[2]), &pin) != DHT_ERROR_NONE)
         {
-            usage();
+            DHT_usage();
             return DHT_ERROR_INVALID_PARAM;
         }
     }
