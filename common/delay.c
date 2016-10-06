@@ -5,7 +5,7 @@
 // test shows the clock_gettime works in most cases (not every time),
 // and could reach 1us resolution especially in root mode
 
-void wait_us(int wait)
+void cmn_delay_us(int us)
 {
     struct timespec tstart, tstop;
     time_t sec;
@@ -14,7 +14,7 @@ void wait_us(int wait)
     if (clock_gettime(CLOCK_MONOTONIC_RAW, &tstart) != 0) return;
 
     sec = tstart.tv_sec;
-    nsec = tstart.tv_nsec + wait*1000;
+    nsec = tstart.tv_nsec + us*1000;
 
     if (nsec >= 1000000000)
     {

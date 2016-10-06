@@ -1,7 +1,7 @@
 #include <string.h>
 #include "common.h"
 
-int board_to_bcm_pin(int board_pin)
+int cmn_pin_board2bcm(int board_pin)
 {
     int pinmap[40+1];
 

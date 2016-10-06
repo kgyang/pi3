@@ -15,10 +15,10 @@
 #define DHT_GPIO_LOW LOW
 
 // test shows bcm delay is worse than clock_gettime
-//#define DHT_wait_ms(ms) bcm2835_delay(ms)
-//#define DHT_wait_us(us) bcm2835_delayMicroseconds(us)
-#define DHT_wait_ms(ms) wait_us((ms)*1000)
-#define DHT_wait_us(us) wait_us(us)
+//#define DHT_delay_ms(ms) bcm2835_delay(ms)
+//#define DHT_delay_us(us) bcm2835_delayMicroseconds(us)
+#define DHT_delay_ms(ms) cmn_delay_us((ms)*1000)
+#define DHT_delay_us(us) cmn_delay_us(us)
 
 typedef enum {
     DHT11   = 11,
@@ -56,11 +56,11 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
     // If always signal high-voltage-level, it means DHT22 is not 
     // working properly, plesee check the electrical connection status.
     DHT_GPIO_OUTPUT;
-    DHT_wait_us(10); //10 us
+    DHT_delay_us(10); //10 us
     DHT_GPIO_CLR; //MCU send out start signal to DHT22
-    DHT_wait_ms(1); //1 ms
+    DHT_delay_ms(1); //1 ms
     DHT_GPIO_SET; //MCU pull up
-    DHT_wait_us(10); //10us
+    DHT_delay_us(10); //10us
     DHT_GPIO_INPUT;
     //DHT_GPIO_PUDUP;
 
@@ -73,7 +73,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
             fprintf(stderr,"no ACK\n");
             return DHT_ERROR_NOT_PRESENT;
         }
-        DHT_wait_us(10);
+        DHT_delay_us(10);
     }
     wait_ack_us = count*10;
     
@@ -86,7 +86,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
             fprintf(stderr,"ACK pulse too long\n");
             return DHT_ERROR_NOT_PRESENT;
         }
-        DHT_wait_us(10);
+        DHT_delay_us(10);
     }
     ack_us = count*10;
     
@@ -99,7 +99,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
             fprintf(stderr,"no data sent\n");
             return DHT_ERROR_NOT_PRESENT;
         }
-        DHT_wait_us(10);
+        DHT_delay_us(10);
     }
     data_ready_us = count*10;
     
@@ -120,7 +120,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
                 fprintf(stderr,"bit %d start timeout\n", bit);
                 return DHT_ERROR_TIMEOUT;
             }
-            DHT_wait_us(10);
+            DHT_delay_us(10);
         }
 	bit_start_us[bit] = count*10;
         
@@ -133,7 +133,7 @@ int DHT_read(DHT_Type type, uint8_t pin, float* humidity, float* temperature)
                 fprintf(stderr,"bit %d width timeout\n", bit);
                 return DHT_ERROR_TIMEOUT;
             }
-            DHT_wait_us(10);
+            DHT_delay_us(10);
         }
 	bit_level_us[bit] = count*10;
 
@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
 
     if (strcasecmp(argv[1], "board") == 0)
     {
-        if ((pin = board_to_bcm_pin(atoi(argv[2]))) == -1)
+        if ((pin = cmn_pin_board2bcm(atoi(argv[2]))) == -1)
         {
             DHT_usage();
             return DHT_ERROR_INVALID_PARAM;
