@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SENSOR=$HOME/pi3/bin/DHT
+SENSOR=/home/pi/pi3/bin/DHT
 SENSOR_BOARD_PIN=3
 
 [ -f $SENSOR ] || exit 1
@@ -14,7 +14,7 @@ do
 		echo $res
 		exit 0
 	else
-		sleep 5
+		sleep 2
 	fi
 done
 

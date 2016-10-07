@@ -104,3 +104,14 @@ bcm delay 2us introduces real 5.5us
 bcm delay 5us introduces real 9us
 so change to clock_gettime scheme, note, clock_gettime seems works more accurate in root mode
 
+#web server
+sudo apt-get install apache2
+sudo apt-get install php5 libaparch2-mod-php
+cd /var/www/html
+mv index.html index.html.old
+echo '<?php echo date("Y-m-d H:i:s "); system("/home/pi/pi3/script/temperature.sh"); ?>' >> index.php
+sudo usermod -a -G gpio www-data
+sudo apachectl restart
+
+
+
