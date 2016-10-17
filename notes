@@ -113,5 +113,19 @@ echo '<?php echo date("Y-m-d H:i:s "); system("/home/pi/pi3/script/temperature.s
 sudo usermod -a -G gpio www-data
 sudo apachectl restart
 
+# auto reconnect wifi
+dhcp seems does not retry after wireless router reboots
+so the autoreconnect.sh is written and added to cron to run every 5 minutes
 
+# cron syslog for php5 found every 30 minutes
+Oct 17 06:39:01 raspberrypi CRON[25046]: (root) CMD (  [ -x /usr/lib/php5/sessionclean ] && /usr/lib/php5/sessionclean)
+Oct 17 07:09:01 raspberrypi CRON[25089]: (root) CMD (  [ -x /usr/lib/php5/sessionclean ] && /usr/lib/php5/sessionclean)
+Oct 17 07:17:01 raspberrypi CRON[25130]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+
+refer to /etc/cron.d/php5
+/etc/php5/apache2/php.ini: session.save_handler = files
+
+I don't want to add so many log in syslog, so disable cron syslog by adding options of cron
+sudo echo 'EXTRA_OPTS="-L 0"' >> /etc/default/cron
+sudo service cron restart
 
