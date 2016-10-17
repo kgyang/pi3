@@ -2,11 +2,6 @@
 
 while true
 do
-if ifconfig wlan0 | grep inet
-then
-	sleep 60
-else
-	sudo ifup --force wlan0
-	sleep 10
-fi
+	ifconfig wlan0 | grep inet >> /dev/null || sudo ifup --force wlan0
+	sleep 300
 done
