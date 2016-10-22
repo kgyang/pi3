@@ -447,7 +447,7 @@ void bcm2835_delayMicroseconds(uint64_t micros)
     if (debug)
     {
 	/* Cant access sytem timers in debug mode */
-	printf("bcm2835_delayMicroseconds %lld\n", micros);
+	printf("bcm2835_delayMicroseconds %lu\n", micros);
 	return;
     }
 

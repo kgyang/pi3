@@ -12,7 +12,7 @@ OBJS = $(foreach obj, $(patsubst %.c, %.o, $(SRCS)), $(OBJ_DIR)/$(obj))
 
 LIB = $(LIB_DIR)/libbcm2835.a
 
-CFLAGS = -g
+CFLAGS = -g -Wno-pointer-to-int-cast -Wno-int-to-pointer-cast
 
 all: $(LIB)
 
