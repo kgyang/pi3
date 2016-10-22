@@ -1,23 +1,18 @@
 #!/bin/bash
 
-log()
-{
-	log_file=/tmp/autoreconnect.log
-	echo "$(date): $1" >> $log_file
-}
-
+MAX_CONSECUTIVE_FAILURE=100
 consecutive_failure=0
-while ((consecutive_failure < 100))
+while ((consecutive_failure < $MAX_CONSECUTIVE_FAILURE))
 do
 	if ifconfig wlan0 | grep 'inet addr' >> /dev/null
 	then
 		consecutive_failure=0
 	else
 		let consecutive_failure++
-		log "wlan0 down, redo ifup"
+		logger "$0: wlan0 down, redo ifup, failure $consecutive_failure"
 		sudo ifup --force wlan0
 	fi
 	sleep 300
 done
-log "failure"
+logger "$0: wlan0 consecutive failure exceed $MAX_CONSECUTIVE_FAILURE times, quit"
 
