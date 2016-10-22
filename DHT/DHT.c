@@ -222,14 +222,18 @@ int main(int argc, char* argv[])
             return DHT_ERROR_INVALID_PARAM;
         }
     }
-
-    if (strcasecmp(argv[1], "board") == 0)
+    else if (strcasecmp(argv[1], "board") == 0)
     {
         if ((pin = cmn_pin_board2bcm(atoi(argv[2]))) == -1)
         {
             DHT_usage();
             return DHT_ERROR_INVALID_PARAM;
         }
+    }
+    else
+    {
+        DHT_usage();
+        return DHT_ERROR_INVALID_PARAM;
     }
 
     if (!bcm2835_init())
