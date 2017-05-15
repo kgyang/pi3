@@ -129,3 +129,10 @@ I don't want to add so many log in syslog, so disable cron syslog by adding opti
 sudo echo 'EXTRA_OPTS="-L 0"' >> /etc/default/cron
 sudo service cron restart
 
+# comment out last 4 lines in /etc/rsyslog.conf to avoid rsyslog error messages flooding logs like following:
+# .....action 'action 17' suspended, next retry ...
+# refer to https://www.raspberrypi.org/forums/viewtopic.php?f=91&t=122601
+    #daemon.*;mail.*;\
+    #       news.err;\
+    #       *.=debug;*.=info;\
+    #       *.=notice;*.=warn       |/dev/xconsole
