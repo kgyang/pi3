@@ -3,46 +3,81 @@
 import sys
 import subprocess
 import httplib, urllib
-import datetime
+from datetime import datetime
 import time
 
-sleep = 900 # how many seconds to sleep between posts to server
-home = 'changnin'
+URL = "http://10.0.0.7:8000/smarthome/api/upload"
+MAX_PENDING_SIZE = 96*7
+SAMPLE_INTERVAL = 900 # how many seconds to sleep between posts to server
 
-def getTempHumidity():
-    p = subprocess.Popen("/home/pi/pi3/script/temperature.sh", stdout = subprocess.PIPE, shell = True)
+def read_temperature():
+    p = subprocess.Popen("/home/pi/pi3/script/temperature.sh", \
+                         stdout = subprocess.PIPE, shell = True)
     (out, err) = p.communicate()
     if out:
         out = out.split()
         if (len(out) != 4):
-            return None,None
-        return out[1],out[3]
+            print date, 'read temperature fail: error'
+            return (None,None)
+        return (out[1],out[3])
     else:
-        return None,None
+        print date, 'read temperature fail: no response'
+        return (None,None)
 
-#Report Raspberry Pi temperature to server
-def reportenv():
-    date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    temp, hum = getTempHumidity()
-    if not temp:
-        print date, 'failed to get temperature and humidity'
-        return
+class Sample:
+    def __init__(self):
+        self.date = datetime.now().strftime("%Y-%m-%d %H:%M")
+        self.home = 'changnin'
+        self.temperature, self.humidity = read_temperature()
 
-    params = urllib.urlencode({'date':date, 'temperature': temp, 'humidity': hum, 'home':home }) 
+    def valid(self):
+        return self.temperature is not None
+
+    def data(self):
+        if not valid(): return None
+        return {'date':self.date, 'home':self.home, \
+                'temperature':self.temperature, 'humidity':self.humidity }
+
+#Report data to server
+def upload(url, data):
+    root_url = url.split('/')[0]
+    sub_url = '/' + '/'.join(url.split('/')[1:])
+
+    conn = httplib.HTTPConnection(root_url, timeout=10)
+
     headers = {"Content-type": "application/x-www-form-urlencoded","Accept": "text/plain"}
-    conn = httplib.HTTPConnection("10.0.0.7:8000", timeout=10)
+
+    params = urllib.urlencode(data)
     try:
-        conn.request("POST", "/smarthome/api/upload", params, headers)
+        conn.request("POST", sub_url, params, headers)
         response = conn.getresponse()
         print date, response.status, response.reason
-        data = response.read()
+        #res = response.read()
         conn.close()
+        return True
     except:
-        print "connection failed"
+        conn.close()
+        print "failed to upload " + str(data)
+        return False
 
-#sleep for desired amount of time
 if __name__ == "__main__":
-        reportenv()
-        #while True:
-                #reportenv()
-                #time.sleep(sleep)
+    pendinglist = list()
+    while True:
+        data = Sample().data()
+        if not data: continue
+
+        if upload(URL, data):
+            # resend pending when network recovers
+            failed = list()
+            for data in pendinglist:
+                if not upload(URL, data):
+                    failed.append(data)
+            pendinglist = failed
+        else:
+            pendinglist.append(data)
+            if len(pendinglist) > MAX_PENDING_SIZE:
+                del pendinglist[0]
+        if pendinglist:
+            print 'pending list length ' + str(len(pendinglist))
+        time.sleep(SAMPLE_INTERVAL)
+
