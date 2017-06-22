@@ -5,10 +5,9 @@ import subprocess
 import httplib, urllib
 from datetime import datetime
 import time
+import re
 
 URL = "http://10.0.0.7:8000/smarthome/api/upload"
-MAX_PENDING_SIZE = 96*7
-SAMPLE_INTERVAL = 900 # how many seconds to sleep between posts to server
 
 def read_temperature():
     p = subprocess.Popen("/home/pi/pi3/script/temperature.sh", \
@@ -40,8 +39,9 @@ class Sample:
 
 #Report data to server
 def upload(url, data):
-    root_url = url.split('/')[0]
-    sub_url = '/' + '/'.join(url.split('/')[1:])
+    m = re.match(r'(.*://[^/]*)(.*)', url)
+    root_url = m.group(1)
+    sub_url = m.group(2)
 
     conn = httplib.HTTPConnection(root_url, timeout=10)
 
@@ -60,24 +60,18 @@ def upload(url, data):
         print "failed to upload " + str(data)
         return False
 
-if __name__ == "__main__":
-    pendinglist = list()
-    while True:
-        data = Sample().data()
-        if not data: continue
+def save_pending(data):
+    pass
 
-        if upload(URL, data):
-            # resend pending when network recovers
-            failed = list()
-            for data in pendinglist:
-                if not upload(URL, data):
-                    failed.append(data)
-            pendinglist = failed
-        else:
-            pendinglist.append(data)
-            if len(pendinglist) > MAX_PENDING_SIZE:
-                del pendinglist[0]
-        if pendinglist:
-            print 'pending list length ' + str(len(pendinglist))
-        time.sleep(SAMPLE_INTERVAL)
+def upload_pending():
+    pass
+
+if __name__ == "__main__":
+    data = Sample().data()
+    if not data: sys.exit(0)
+
+    if upload(URL, data):
+        upload_pending()
+    else:
+        save_pending(data)
 
