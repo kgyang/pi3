@@ -7,7 +7,9 @@ from datetime import datetime
 import time
 import re
 
-URL = "http://10.0.0.7:8000/smarthome/api/upload"
+SAMPLE_FILE='/home/pi/sample_env.txt'
+SAMPLE_PENDING_FILE='/home/pi/sample_env_pending.txt'
+URL = 'http://45.78.43.92:8000/smarthome/api/upload'
 
 def read_temperature():
     p = subprocess.Popen("/home/pi/pi3/script/temperature.sh", \
@@ -33,7 +35,7 @@ class Sample:
         return self.temperature is not None
 
     def data(self):
-        if not valid(): return None
+        if not self.valid(): return None
         return {'date':self.date, 'home':self.home, \
                 'temperature':self.temperature, 'humidity':self.humidity }
 
@@ -60,7 +62,11 @@ def upload(url, data):
         print "failed to upload " + str(data)
         return False
 
-def save_pending(data):
+def save_data(data):
+    with open(SAMPLE_FILE, 'a') as f:
+        f.write(str(data)+'\n')
+
+def save_data_in_pending(data):
     pass
 
 def upload_pending():
@@ -69,9 +75,10 @@ def upload_pending():
 if __name__ == "__main__":
     data = Sample().data()
     if not data: sys.exit(0)
+    save_data(data)
 
-    if upload(URL, data):
-        upload_pending()
-    else:
-        save_pending(data)
+    #if upload(URL, data):
+    #    upload_pending()
+    #else:
+    #    save_data_in_pending(data)
 
