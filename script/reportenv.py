@@ -7,8 +7,8 @@ from datetime import datetime
 import time
 import re
 
-SAMPLE_FILE='/home/pi/sample_env.txt'
-SAMPLE_PENDING_FILE='/home/pi/sample_env_pending.txt'
+SAMPLE_FILE='/home/pi/env_sample_data.txt'
+SAMPLE_PENDING_FILE='/home/pi/env_sample_pending.txt'
 URL = 'http://45.78.43.92:8000/smarthome/api/upload'
 
 def read_temperature():
