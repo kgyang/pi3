@@ -136,3 +136,17 @@ sudo service cron restart
     #       news.err;\
     #       *.=debug;*.=info;\
     #       *.=notice;*.=warn       |/dev/xconsole
+
+# disabling linux's use of console uart to change the uart to be used by ch2o sensor
+sudo nano /boot/cmdline.txt
+#remove 'console=/dev/ttyAMA0,11520'
+
+sudo systemctl disable hciuart
+
+add dtoverlay=pi3-disable-bt in config.txt
+
+# test uart tools
+sudo apt-get install minicom
+
+# uart/uart.c does not work yet
+# ch2o.py works and is added in reportenv now

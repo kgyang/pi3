@@ -6,10 +6,14 @@ import httplib, urllib
 from datetime import datetime
 import time
 import re
+import ch2o
 
 SAMPLE_FILE='/home/pi/env_sample_data.txt'
 SAMPLE_PENDING_FILE='/home/pi/env_sample_pending.txt'
 URL = 'http://45.78.43.92:8000/smarthome/api/upload'
+
+def read_ch2o():
+    return ch2o.read_ch2o()
 
 def read_temperature():
     p = subprocess.Popen("/home/pi/pi3/script/temperature.sh", \
@@ -30,6 +34,7 @@ class Sample:
         self.date = datetime.now().strftime("%Y-%m-%d %H:%M")
         self.home = 'changnin'
         self.temperature, self.humidity = read_temperature()
+        self.ch2o = read_ch2o()
 
     def valid(self):
         return self.temperature is not None
@@ -37,7 +42,8 @@ class Sample:
     def data(self):
         if not self.valid(): return None
         return {'date':self.date, 'home':self.home, \
-                'temperature':self.temperature, 'humidity':self.humidity }
+                'temperature':self.temperature, 'humidity':self.humidity,
+                'ch2o':self.ch2o }
 
 #Report data to server
 def upload(url, data):
