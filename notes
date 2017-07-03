@@ -150,3 +150,7 @@ sudo apt-get install minicom
 
 # uart/uart.c does not work yet
 # ch2o.py works and is added in reportenv now
+
+# add www-data in dialout group to allow the /dev/ttyAMA0 could be read by apache server by calling ch2o.py
+sudo adduser www-data dialout
+sudo apachectl restart
