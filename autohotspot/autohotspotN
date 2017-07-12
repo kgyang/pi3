@@ -16,16 +16,7 @@
 
 
 #These four lines capture the wifi networks the RPi is setup to use
-#IFSdef=$IFS
 #wpassid=$(awk '/ssid="/{ print $0 }' /etc/wpa_supplicant/wpa_supplicant.conf | awk -F'ssid=' '{ print $2 }' ORS=',' | sed 's/\"/''/g' | sed 's/,$//')
-#IFS=","
-#ssids=($wpassid)
-#IFS=$IFSdef #reset back to defaults
-
-#Note:If you only want to check for certain SSIDs
-#Remove the # in in front of ssids=('mySSID1'.... below and put a # infront of all four lines above
-# separated by a space, eg ('mySSID1' 'mySSID2')
-#ssids=('mySSID1' 'mySSID2' 'mySSID3')
 
 IF_NAME='wlan0'
 IF_ADDR='10.0.100.1/24'
@@ -97,19 +88,22 @@ deactivate_wifi()
     wifi_activated || return 0
 
     wpa_cli terminate >/dev/null 2>&1
-    rm -r /var/run/wpa_supplicant >/dev/null 2>&1
+    rm -rf /var/run/wpa_supplicant
 
     flush_wireless_interface
 }
 
 scan_ssids()
 {
-    iw dev $IF_NAME scan ap-force | sed -n 's/[[:space:]]*SSID:[[:space:]]*\(.*\)/\1/p'
+    iw dev $IF_NAME scan ap-force | \
+    sed -n 's/[[:space:]]*SSID:[[:space:]]*\(.*\)/\1/p' | \
+    tr '\n' ' '
 }
 
 get_ssids_configured()
 {
-    sed -n 's/.*ssid="\(.*\)"/\1/p' /etc/wpa_supplicant/wpa_supplicant.conf
+    sed -n 's/.*ssid="\(.*\)"/\1/p' /etc/wpa_supplicant/wpa_supplicant.conf | \
+    tr '\n' ' '
 }
 
 ssid_available()
@@ -128,6 +122,11 @@ ssid_available()
     done
 
     return 1
+}
+
+[[ $(whoami) == 'root' ]] || {
+    echo "should only be run by root" >&2;
+    exit 1;
 }
 
 if ssid_available
