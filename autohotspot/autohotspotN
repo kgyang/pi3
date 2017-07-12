@@ -39,30 +39,43 @@ activate_ad_hoc()
 {
     echo "activate ad hoc"
     ad_hoc_activated && return 0
+
     ip link set dev $IF_NAME down
     ip addr add $IF_ADDR broadcast + dev $IF_NAME
     ip link set dev $IF_NAME up
+
     iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
     iptables -A FORWARD -i eth0 -o $IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
     iptables -A FORWARD -i $IF_NAME -o eth0 -j ACCEPT
+
     systemctl start dnsmasq
     systemctl start hostapd
+
     echo 1 > /proc/sys/net/ipv4/ip_forward
+}
+
+flush_wireless_interface()
+{
+    ip link set dev $IF_NAME down
+    ip addr flush dev $IF_NAME
+    ip link set dev $IF_NAME up
 }
 
 deactivate_ad_hoc()
 {
     echo "deactivate ad hoc"
     ad_hoc_activated || return 0
-    ip link set dev $IF_NAME down
+
+    echo 0 > /proc/sys/net/ipv4/ip_forward
+
     systemctl stop hostapd
     systemctl stop dnsmasq
+
     iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
     iptables -D FORWARD -i eth0 -o $IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
     iptables -D FORWARD -i $IF_NAME -o eth0 -j ACCEPT
-    echo 0 > /proc/sys/net/ipv4/ip_forward
-    ip addr flush dev $IF_NAME
-    ip link set dev $IF_NAME up
+
+    flush_wireless_interface
 }
 
 wifi_activated()
@@ -74,18 +87,19 @@ activate_wifi()
 {
     echo "activate wifi"
     wifi_activated && return 0
+
     wpa_supplicant -B -i $IF_NAME -c /etc/wpa_supplicant/wpa_supplicant.conf >/dev/null 2>&1
-    
 }
 
 deactivate_wifi()
 {
     echo "deactivate wifi"
     wifi_activated || return 0
+
     wpa_cli terminate >/dev/null 2>&1
-    ip addr flush $IF_NAME
-    ip link set dev $IF_NAME down
     rm -r /var/run/wpa_supplicant >/dev/null 2>&1
+
+    flush_wireless_interface
 }
 
 scan_ssids()
@@ -103,8 +117,7 @@ ssid_available()
     ssids_online="$(scan_ssids)"
     ssids_configured="$(get_ssids_configured)"
 
-    #Enter the Routers Mac Addresses for hidden SSIDs, seperated by spaces ie 
-    #( '11:22:33:44:55:66' 'aa:bb:cc:dd:ee:ff' ) 
+    #Enter the Routers Mac Addresses for hidden SSIDs, seperated by spaces
     mac=""
     ssidsmac="$ssids_configured $mac" #combines ssid and MAC for checking
 
