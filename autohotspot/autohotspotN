@@ -22,120 +22,119 @@ WIRED_IF_NAME='eth0'
 WIRELESS_IF_NAME='wlan0'
 AD_HOC_IF_ADDR='10.0.100.1/24'
 WPA_SUP_CONF='/etc/wpa_supplicant/wpa_supplicant.conf'
-WPA_SUP_PID='/var/run/wpa_supplicant'
 
 ad_hoc_activated()
 {
-    systemctl status hostapd | grep -q "(running)"
+	systemctl status hostapd | grep -q "(running)"
 }
 
 activate_ad_hoc()
 {
-    echo "activate ad hoc"
-    ad_hoc_activated && return 0
+	echo "activate ad hoc"
+	ad_hoc_activated && return 0
 
-    ip link set dev $WIRELESS_IF_NAME down
-    ip addr add $AD_HOC_IF_ADDR broadcast + dev $WIRELESS_IF_NAME
-    ip link set dev $WIRELESS_IF_NAME up
+	ip link set dev $WIRELESS_IF_NAME down
+	ip addr add $AD_HOC_IF_ADDR broadcast + dev $WIRELESS_IF_NAME
+	ip link set dev $WIRELESS_IF_NAME up
 
-    iptables -t nat -A POSTROUTING -o $WIRED_IF_NAME -j MASQUERADE
-    iptables -A FORWARD -i $WIRED_IF_NAME -o $WIRELESS_IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
-    iptables -A FORWARD -i $WIRELESS_IF_NAME -o $WIRED_IF_NAME -j ACCEPT
+	iptables -t nat -A POSTROUTING -o $WIRED_IF_NAME -j MASQUERADE
+	iptables -A FORWARD -i $WIRED_IF_NAME -o $WIRELESS_IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
+	iptables -A FORWARD -i $WIRELESS_IF_NAME -o $WIRED_IF_NAME -j ACCEPT
 
-    systemctl start dnsmasq
-    systemctl start hostapd
+	systemctl start dnsmasq
+	systemctl start hostapd
 
-    echo 1 > /proc/sys/net/ipv4/ip_forward
+	echo 1 > /proc/sys/net/ipv4/ip_forward
 }
 
 flush_wireless_interface()
 {
-    ip link set dev $WIRELESS_IF_NAME down
-    ip addr flush dev $WIRELESS_IF_NAME
-    ip link set dev $WIRELESS_IF_NAME up
+	ip link set dev $WIRELESS_IF_NAME down
+	ip addr flush dev $WIRELESS_IF_NAME
+	ip link set dev $WIRELESS_IF_NAME up
 }
 
 deactivate_ad_hoc()
 {
-    echo "deactivate ad hoc"
-    ad_hoc_activated || return 0
+	echo "deactivate ad hoc"
+	ad_hoc_activated || return 0
 
-    echo 0 > /proc/sys/net/ipv4/ip_forward
+	echo 0 > /proc/sys/net/ipv4/ip_forward
 
-    systemctl stop hostapd
-    systemctl stop dnsmasq
+	systemctl stop hostapd
+	systemctl stop dnsmasq
 
-    iptables -t nat -D POSTROUTING -o $WIRED_IF_NAME -j MASQUERADE
-    iptables -D FORWARD -i $WIRED_IF_NAME -o $WIRELESS_IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
-    iptables -D FORWARD -i $WIRELESS_IF_NAME -o $WIRED_IF_NAME -j ACCEPT
+	iptables -t nat -D POSTROUTING -o $WIRED_IF_NAME -j MASQUERADE
+	iptables -D FORWARD -i $WIRED_IF_NAME -o $WIRELESS_IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
+	iptables -D FORWARD -i $WIRELESS_IF_NAME -o $WIRED_IF_NAME -j ACCEPT
 
-    flush_wireless_interface
+	flush_wireless_interface
 }
 
 wifi_activated()
 {
-    wpa_cli status | grep -q 'ip_address'
+	wpa_cli status | grep -q 'ip_address'
 }
 
 activate_wifi()
 {
-    echo "activate wifi"
-    wifi_activated && return 0
+	echo "activate wifi"
+	wifi_activated && return 0
 
-    wpa_supplicant -B -i $WIRELESS_IF_NAME -c $WPA_SUP_CONF >/dev/null 2>&1
+	wpa_supplicant -B -i $WIRELESS_IF_NAME -c $WPA_SUP_CONF >/dev/null 2>&1
 }
 
 deactivate_wifi()
 {
-    echo "deactivate wifi"
-    wifi_activated || return 0
+	echo "deactivate wifi"
+	wifi_activated || return 0
 
-    wpa_cli terminate >/dev/null 2>&1
-    rm -f $WPA_SUP_PID
+	wpa_cli terminate >/dev/null 2>&1
+	#rm -rf /var/run/wpa_supplicant
 
-    flush_wireless_interface
+	flush_wireless_interface
 }
 
 scan_ssids()
 {
-    echo -n $(iw dev $WIRELESS_IF_NAME scan ap-force | \
-              sed -n 's/[[:space:]]*SSID:[[:space:]]*\(.*\)/\1/p')
+	echo -n $(iw dev $WIRELESS_IF_NAME scan ap-force | \
+			  sed -n 's/[[:space:]]*SSID:[[:space:]]*\(.*\)/\1/p')
 }
 
 get_ssids_configured()
 {
-    echo -n $(sed -n 's/.*ssid="[[:space:]]*\(.*\)"/\1/p' $WPA_SUP_CONF)
+	echo -n $(sed -n 's/.*ssid="[[:space:]]*\(.*\)"/\1/p' $WPA_SUP_CONF)
 }
 
 ssid_available()
 {
-    ssids_online="$(scan_ssids)"
-    ssids_configured="$(get_ssids_configured)"
+	ssids_online="$(scan_ssids)"
+	ssids_configured="$(get_ssids_configured)"
 
-    #Enter the Routers Mac Addresses for hidden SSIDs, seperated by spaces
-    mac=""
-    ssidsmac="$ssids_configured $mac" #combines ssid and MAC for checking
+	#Enter the Routers Mac Addresses for hidden SSIDs, seperated by spaces
+	mac=""
+	ssidsmac="$ssids_configured $mac" #combines ssid and MAC for checking
 
-    #Check to see what SSID's and MAC addresses are in range
-    for ssid in $ssidsmac
-    do
-         echo "$ssids_online" | grep -q "$ssid" && return 0
-    done
+	#Check to see what SSID's and MAC addresses are in range
+	for ssid in $ssidsmac
+	do
+		 echo "$ssids_online" | grep -q "$ssid" && return 0
+	done
 
-    return 1
+	return 1
 }
 
 [[ $(whoami) == 'root' ]] || {
-    echo "should only be run by root" >&2
-    exit 1
+	echo "should only be run by root" >&2
+	exit 1
 }
 
 if ssid_available
 then
-    deactivate_ad_hoc
-    activate_wifi
+	deactivate_ad_hoc
+	activate_wifi
 else
-    deactivate_wifi
-    activate_ad_hoc
+	deactivate_wifi
+	activate_ad_hoc
 fi
 
