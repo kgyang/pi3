@@ -18,8 +18,11 @@
 #These four lines capture the wifi networks the RPi is setup to use
 #wpassid=$(awk '/ssid="/{ print $0 }' /etc/wpa_supplicant/wpa_supplicant.conf | awk -F'ssid=' '{ print $2 }' ORS=',' | sed 's/\"/''/g' | sed 's/,$//')
 
-IF_NAME='wlan0'
-IF_ADDR='10.0.100.1/24'
+WIRED_IF_NAME='eth0'
+WIRELESS_IF_NAME='wlan0'
+AD_HOC_IF_ADDR='10.0.100.1/24'
+WPA_SUP_CONF='/etc/wpa_supplicant/wpa_supplicant.conf'
+WPA_SUP_PID='/var/run/wpa_supplicant'
 
 ad_hoc_activated()
 {
@@ -31,13 +34,13 @@ activate_ad_hoc()
     echo "activate ad hoc"
     ad_hoc_activated && return 0
 
-    ip link set dev $IF_NAME down
-    ip addr add $IF_ADDR broadcast + dev $IF_NAME
-    ip link set dev $IF_NAME up
+    ip link set dev $WIRELESS_IF_NAME down
+    ip addr add $AD_HOC_IF_ADDR broadcast + dev $WIRELESS_IF_NAME
+    ip link set dev $WIRELESS_IF_NAME up
 
-    iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-    iptables -A FORWARD -i eth0 -o $IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
-    iptables -A FORWARD -i $IF_NAME -o eth0 -j ACCEPT
+    iptables -t nat -A POSTROUTING -o $WIRED_IF_NAME -j MASQUERADE
+    iptables -A FORWARD -i $WIRED_IF_NAME -o $WIRELESS_IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
+    iptables -A FORWARD -i $WIRELESS_IF_NAME -o $WIRED_IF_NAME -j ACCEPT
 
     systemctl start dnsmasq
     systemctl start hostapd
@@ -47,9 +50,9 @@ activate_ad_hoc()
 
 flush_wireless_interface()
 {
-    ip link set dev $IF_NAME down
-    ip addr flush dev $IF_NAME
-    ip link set dev $IF_NAME up
+    ip link set dev $WIRELESS_IF_NAME down
+    ip addr flush dev $WIRELESS_IF_NAME
+    ip link set dev $WIRELESS_IF_NAME up
 }
 
 deactivate_ad_hoc()
@@ -62,9 +65,9 @@ deactivate_ad_hoc()
     systemctl stop hostapd
     systemctl stop dnsmasq
 
-    iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
-    iptables -D FORWARD -i eth0 -o $IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
-    iptables -D FORWARD -i $IF_NAME -o eth0 -j ACCEPT
+    iptables -t nat -D POSTROUTING -o $WIRED_IF_NAME -j MASQUERADE
+    iptables -D FORWARD -i $WIRED_IF_NAME -o $WIRELESS_IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
+    iptables -D FORWARD -i $WIRELESS_IF_NAME -o $WIRED_IF_NAME -j ACCEPT
 
     flush_wireless_interface
 }
@@ -79,7 +82,7 @@ activate_wifi()
     echo "activate wifi"
     wifi_activated && return 0
 
-    wpa_supplicant -B -i $IF_NAME -c /etc/wpa_supplicant/wpa_supplicant.conf >/dev/null 2>&1
+    wpa_supplicant -B -i $WIRELESS_IF_NAME -c $WPA_SUP_CONF >/dev/null 2>&1
 }
 
 deactivate_wifi()
@@ -88,22 +91,20 @@ deactivate_wifi()
     wifi_activated || return 0
 
     wpa_cli terminate >/dev/null 2>&1
-    rm -rf /var/run/wpa_supplicant
+    rm -f $WPA_SUP_PID
 
     flush_wireless_interface
 }
 
 scan_ssids()
 {
-    iw dev $IF_NAME scan ap-force | \
-    sed -n 's/[[:space:]]*SSID:[[:space:]]*\(.*\)/\1/p' | \
-    tr '\n' ' '
+    echo -n $(iw dev $WIRELESS_IF_NAME scan ap-force | \
+              sed -n 's/[[:space:]]*SSID:[[:space:]]*\(.*\)/\1/p')
 }
 
 get_ssids_configured()
 {
-    sed -n 's/.*ssid="\(.*\)"/\1/p' /etc/wpa_supplicant/wpa_supplicant.conf | \
-    tr '\n' ' '
+    echo -n $(sed -n 's/.*ssid="[[:space:]]*\(.*\)"/\1/p' $WPA_SUP_CONF)
 }
 
 ssid_available()
@@ -125,8 +126,8 @@ ssid_available()
 }
 
 [[ $(whoami) == 'root' ]] || {
-    echo "should only be run by root" >&2;
-    exit 1;
+    echo "should only be run by root" >&2
+    exit 1
 }
 
 if ssid_available
