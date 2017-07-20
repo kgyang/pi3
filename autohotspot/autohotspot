@@ -15,35 +15,32 @@
 #http://www.raspberryconnect.com
 
 
-#These four lines capture the wifi networks the RPi is setup to use
-#wpassid=$(awk '/ssid="/{ print $0 }' /etc/wpa_supplicant/wpa_supplicant.conf | awk -F'ssid=' '{ print $2 }' ORS=',' | sed 's/\"/''/g' | sed 's/,$//')
-
 WIRED_IF_NAME='eth0'
 WIRELESS_IF_NAME='wlan0'
-WIRELESS_IF_STATIC_DEF_FILE=/home/pi/pi3/autohotspot/interfaces.wlan0static
+WIRELESS_IF_STATIC_CONF=/home/pi/pi3/autohotspot/interfaces.wlan0static
 WPA_SUP_CONF='/etc/wpa_supplicant/wpa_supplicant.conf'
 
 set -x
 
 ad_hoc_activated()
 {
-	systemctl status hostapd | grep -q "(running)"
+	systemctl status hostapd | grep -q "(running)" || \
+	iw dev $WIRELESS_IF_NAME info | grep -q 'type AP'
 }
 
 activate_ad_hoc()
 {
 	echo "activate ad hoc"
-	ad_hoc_activated && return 0
+	#ad_hoc_activated && return 0
 
-	ifup -i $WIRELESS_IF_STATIC_DEF_FILE $WIRELESS_IF_NAME
-
-	#iptables -t nat -A POSTROUTING -o $WIRED_IF_NAME -j MASQUERADE
-	#iptables -A FORWARD -i $WIRED_IF_NAME -o $WIRELESS_IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
-	#iptables -A FORWARD -i $WIRELESS_IF_NAME -o $WIRED_IF_NAME -j ACCEPT
+	ifup -i $WIRELESS_IF_STATIC_CONF $WIRELESS_IF_NAME
 
 	systemctl start dnsmasq
 	systemctl start hostapd
 
+	#iptables -t nat -A POSTROUTING -o $WIRED_IF_NAME -j MASQUERADE
+	#iptables -A FORWARD -i $WIRED_IF_NAME -o $WIRELESS_IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
+	#iptables -A FORWARD -i $WIRELESS_IF_NAME -o $WIRED_IF_NAME -j ACCEPT
 	#echo 1 > /proc/sys/net/ipv4/ip_forward
 }
 
@@ -60,22 +57,21 @@ deactivate_ad_hoc()
 	ad_hoc_activated || return 0
 
 	#echo 0 > /proc/sys/net/ipv4/ip_forward
-
-	systemctl stop hostapd
-	systemctl stop dnsmasq
-
-
 	#iptables -t nat -D POSTROUTING -o $WIRED_IF_NAME -j MASQUERADE
 	#iptables -D FORWARD -i $WIRED_IF_NAME -o $WIRELESS_IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
 	#iptables -D FORWARD -i $WIRELESS_IF_NAME -o $WIRED_IF_NAME -j ACCEPT
 
-	ifdown -i $WIRELESS_IF_STATIC_DEF_FILE $WIRELESS_IF_NAME
+	systemctl stop hostapd
+	systemctl stop dnsmasq
+
+	ifdown -i $WIRELESS_IF_STATIC_CONF $WIRELESS_IF_NAME
 	flush_wireless_interface
 }
 
 wifi_activated()
 {
-	wpa_cli status | grep -q 'ip_address'
+	#wpa_cli status | grep -q 'ip_address'
+	iw dev $WIRELESS_IF_NAME info | grep -q 'type managed'
 }
 
 get_wpa_state()
@@ -90,6 +86,7 @@ activate_wifi()
 
 	ifup $WIRELESS_IF_NAME 2>/dev/null
 
+	sleep 5
 	if [ "$(get_wpa_state)" == "SCANNING" ]
 	then
 		wpa_cli reassociate
@@ -113,7 +110,7 @@ deactivate_wifi()
 scan_ssids()
 {
 	echo -n $(iw dev $WIRELESS_IF_NAME scan ap-force | \
-			  sed -n 's/[[:space:]]*SSID:[[:space:]]*\(.*\)/\1/p')
+		sed -n 's/[[:space:]]*SSID:[[:space:]]*\(.*\)/\1/p')
 }
 
 get_ssids_configured()
@@ -123,12 +120,12 @@ get_ssids_configured()
 
 ssid_available()
 {
-	ssids_online="$(scan_ssids)"
-	ssids_configured="$(get_ssids_configured)"
+	local ssids_online="$(scan_ssids)"
+	local ssids_configured="$(get_ssids_configured)"
 
 	#Enter the Routers Mac Addresses for hidden SSIDs, seperated by spaces
-	mac=""
-	ssidsmac="$ssids_configured $mac" #combines ssid and MAC for checking
+	local mac=""
+	local ssidsmac="$ssids_configured $mac" #combines ssid and MAC for checking
 
 	#Check to see what SSID's and MAC addresses are in range
 	for ssid in $ssidsmac
@@ -146,6 +143,8 @@ ssid_available()
 
 if ssid_available
 then
+	#deactivate_wifi
+	#activate_ad_hoc
 	deactivate_ad_hoc
 	activate_wifi
 else
