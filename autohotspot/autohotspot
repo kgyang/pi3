@@ -17,22 +17,18 @@
 
 WIRED_IF_NAME='eth0'
 WIRELESS_IF_NAME='wlan0'
-WIRELESS_IF_STATIC_CONF=/home/pi/pi3/autohotspot/interfaces.wlan0static
+WIRELESS_IF_STATIC_CONF=/home/pi/pi3/autohotspot/interfaces.wlan0.static
 WPA_SUP_CONF='/etc/wpa_supplicant/wpa_supplicant.conf'
 
-set -x
-
-ad_hoc_activated()
+flush_wireless_interface()
 {
-	systemctl status hostapd | grep -q "(running)" || \
-	iw dev $WIRELESS_IF_NAME info | grep -q 'type AP'
+	#ip link set dev $WIRELESS_IF_NAME down
+	ip addr flush dev $WIRELESS_IF_NAME
+	#ip link set dev $WIRELESS_IF_NAME up
 }
 
-activate_ad_hoc()
+enter_accesspoint_mode()
 {
-	echo "activate ad hoc"
-	#ad_hoc_activated && return 0
-
 	ifup -i $WIRELESS_IF_STATIC_CONF $WIRELESS_IF_NAME
 
 	systemctl start dnsmasq
@@ -44,18 +40,8 @@ activate_ad_hoc()
 	#echo 1 > /proc/sys/net/ipv4/ip_forward
 }
 
-flush_wireless_interface()
+quit_accesspoint_mode()
 {
-	#ip link set dev $WIRELESS_IF_NAME down
-	ip addr flush dev $WIRELESS_IF_NAME
-	#ip link set dev $WIRELESS_IF_NAME up
-}
-
-deactivate_ad_hoc()
-{
-	echo "deactivate ad hoc"
-	ad_hoc_activated || return 0
-
 	#echo 0 > /proc/sys/net/ipv4/ip_forward
 	#iptables -t nat -D POSTROUTING -o $WIRED_IF_NAME -j MASQUERADE
 	#iptables -D FORWARD -i $WIRED_IF_NAME -o $WIRELESS_IF_NAME -m state --state RELATED,ESTABLISHED -j ACCEPT
@@ -68,60 +54,62 @@ deactivate_ad_hoc()
 	flush_wireless_interface
 }
 
-wifi_activated()
+enter_station_mode()
 {
-	#wpa_cli status | grep -q 'ip_address'
-	iw dev $WIRELESS_IF_NAME info | grep -q 'type managed'
-}
-
-get_wpa_state()
-{
-	echo -n "$(wpa_cli status | sed -n 's/wpa_state=\(.*\)/\1/p')"
-}
-
-activate_wifi()
-{
-	echo "activate wifi"
-	#wifi_activated && return 0
-
 	ifup $WIRELESS_IF_NAME 2>/dev/null
+}
 
-	sleep 5
-	if [ "$(get_wpa_state)" == "SCANNING" ]
+quit_station_mode()
+{
+	ifdown $WIRELESS_IF_NAME
+	flush_wireless_interface
+}
+
+run_as_station_mode()
+{
+	if is_connected
+	then
+		return 0
+	elif has_ssid
 	then
 		wpa_cli reassociate
+	else
+		quit_station_mode
+		enter_accesspoint_mode
 	fi
 }
 
-deactivate_wifi()
+run_as_accesspoint_mode()
 {
-	echo "deactivate wifi"
-	wifi_activated || return 0
-
-	ifdown $WIRELESS_IF_NAME
-
-	flush_wireless_interface
-
-	#wpa_cli terminate >/dev/null 2>&1
-	#rm -rf /var/run/wpa_supplicant
-
+	if has_ssid
+	then
+		quit_accesspoint_mode
+		enter_station_mode
+	fi
 }
 
-scan_ssids()
+get_wdev_info()
 {
-	echo -n $(iw dev $WIRELESS_IF_NAME scan ap-force | \
-		sed -n 's/[[:space:]]*SSID:[[:space:]]*\(.*\)/\1/p')
+	local attr=$1
+	echo -n $(iw dev $WIRELESS_IF_NAME info | grep $attr | awk '{print $2}')
 }
 
-get_ssids_configured()
+get_wdev_type()
 {
-	echo -n $(sed -n 's/.*ssid="[[:space:]]*\(.*\)"/\1/p' $WPA_SUP_CONF)
+	get_wdev_info 'type'
 }
 
-ssid_available()
+is_connected()
 {
-	local ssids_online="$(scan_ssids)"
-	local ssids_configured="$(get_ssids_configured)"
+	[[ -n "$(get_wdev_info 'ssid')" ]]
+}
+
+has_ssid()
+{
+	local ssids_online="$(iw dev $WIRELESS_IF_NAME scan ap-force | \
+		sed -n 's/[[:space:]]*SSID:[[:space:]]*\(.*\)/\1/p')"
+
+	local ssids_configured="$(sed -n 's/.*ssid="[[:space:]]*\(.*\)"/\1/p' $WPA_SUP_CONF)"
 
 	#Enter the Routers Mac Addresses for hidden SSIDs, seperated by spaces
 	local mac=""
@@ -136,19 +124,15 @@ ssid_available()
 	return 1
 }
 
+# start from here
 [[ $(whoami) == 'root' ]] || {
 	echo "should only be run by root" >&2
 	exit 1
 }
 
-if ssid_available
-then
-	#deactivate_wifi
-	#activate_ad_hoc
-	deactivate_ad_hoc
-	activate_wifi
-else
-	deactivate_wifi
-	activate_ad_hoc
-fi
+case $(get_wdev_type) in
+	"managed") run_as_station_mode;;
+	"AP")      run_as_accesspoint_mode;;
+	*)         ;;
+esac
 
