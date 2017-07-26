@@ -1,5 +1,5 @@
 <?php
-echo "<h1> Welcome to YK&FLL's Home</h1>\n";
+echo "<h1> Welcome</h1>\n";
 
 echo "<h2>";
 echo date('Y-m-d H:i:s ');

@@ -10,7 +10,7 @@ import ch2o
 
 SAMPLE_FILE='/home/pi/env_sample_data.txt'
 SAMPLE_PENDING_FILE='/home/pi/env_sample_pending.txt'
-URL = 'http://45.78.43.92:8000/smarthome/api/upload'
+URL = '/smarthome/api/upload'
 
 def read_ch2o():
     return ch2o.read_ch2o()
@@ -32,7 +32,7 @@ def read_temperature():
 class Sample:
     def __init__(self):
         self.date = datetime.now().strftime("%Y-%m-%d %H:%M")
-        self.home = 'changnin'
+        self.home = ''
         self.temperature, self.humidity = read_temperature()
         self.ch2o = read_ch2o()
 

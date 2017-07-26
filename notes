@@ -154,3 +154,11 @@ sudo apt-get install minicom
 # add www-data in dialout group to allow the /dev/ttyAMA0 could be read by apache server by calling ch2o.py
 sudo adduser www-data dialout
 sudo apachectl restart
+
+# implement autohotsport function based on idea and script from  
+# original artical: http://www.raspberryconnect.com/network/item/330-raspberry-pi-auto-wifi-hotspot-switch-internet
+# if RPI runs at home, connect to router as a station. If RPI runs outside, change to run as access point that
+# can be connected by PC/phone
+# improvement: define interfaces conf file separately for accesspoint mode. Thus, original /etc/network/interfaces
+# can still be used for station mode to connect to router.
+
