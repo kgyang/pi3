@@ -20,13 +20,6 @@ WIRELESS_IF_NAME='wlan0'
 WIRELESS_IF_STATIC_CONF=/home/pi/pi3/autohotspot/interfaces.wlan0.static
 WPA_SUP_CONF='/etc/wpa_supplicant/wpa_supplicant.conf'
 
-flush_wireless_interface()
-{
-	#ip link set dev $WIRELESS_IF_NAME down
-	ip addr flush dev $WIRELESS_IF_NAME
-	#ip link set dev $WIRELESS_IF_NAME up
-}
-
 enter_accesspoint_mode()
 {
 	ifup -i $WIRELESS_IF_STATIC_CONF $WIRELESS_IF_NAME
@@ -51,7 +44,7 @@ quit_accesspoint_mode()
 	systemctl stop dnsmasq
 
 	ifdown -i $WIRELESS_IF_STATIC_CONF $WIRELESS_IF_NAME
-	flush_wireless_interface
+	ip addr flush dev $WIRELESS_IF_NAME
 }
 
 enter_station_mode()
@@ -62,7 +55,7 @@ enter_station_mode()
 quit_station_mode()
 {
 	ifdown $WIRELESS_IF_NAME
-	flush_wireless_interface
+	ip addr flush dev $WIRELESS_IF_NAME
 }
 
 run_as_station_mode()
