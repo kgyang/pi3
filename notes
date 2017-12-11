@@ -162,3 +162,10 @@ sudo apachectl restart
 # improvement: define interfaces conf file separately for accesspoint mode. Thus, original /etc/network/interfaces
 # can still be used for station mode to connect to router.
 
+#I now enabled port forwarding in ISP router to allow accessing to pi by using public IP. In order to make sure the port forwarding always working, the PI shall retains static IP address every time wifi connected. Unfortunately, the router from ISP does not support IP-MAC binding. So here I changed to use another way to solve this issue:
+sudo echo '
+ssid ISP-ROUTER-SSID
+static ip_address=192.168.1.101/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+' >> /etc/dhcpcd.conf
