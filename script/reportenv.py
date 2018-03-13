@@ -34,6 +34,7 @@ class Sample:
         self.date = datetime.now().strftime("%Y-%m-%d %H:%M")
         self.home = ''
         self.temperature, self.humidity = read_temperature()
+        time.sleep(1) # add 1 second latency to reduce ch2o read failures, not sure if it works
         self.ch2o = read_ch2o()
 
     def valid(self):
