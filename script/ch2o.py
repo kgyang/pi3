@@ -53,5 +53,4 @@ def read_ch2o():
 
 if __name__ == '__main__':
     gas = read_ch2o()
-    if gas >= 0:
-        print 'ch2o ' + str(gas)
+    print 'ch2o ' + str(gas)
