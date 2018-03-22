@@ -24,11 +24,13 @@ def send_mail(to, subject, msg):
         mail_msg['From'] = email.utils.formataddr(('RaspberryPi', fromaddr))
         mail_msg['Subject'] = subject
         server.sendmail(fromaddr, toaddrs, mail_msg.as_string())
-        server.quit()
+        res = True
     except:
-        print('send fail: ', sys.exc_info()[0])
+        print('send mail to ' + to ' fail: ', sys.exc_info()[0])
+        res = False
+    finally:
         server.quit()
-        sys.exit(1)
+        return res
 
 if __name__ == "__main__":
     import getopt
