@@ -4,7 +4,7 @@ import sys
 import time 
 import serial
 
-def read_ch2o():
+def read_ch2o(verbose=False):
     port = serial.Serial("/dev/ttyAMA0", baudrate=9600, timeout=0)
     retries = 0;
     while retries < 5:
@@ -15,6 +15,7 @@ def read_ch2o():
     if (retries >= 5): return -1
     #if (retries > 0): print 'retry times: ' + str(retries)
     data = [ord(x) for x in raw]
+    if verbose: print(data)
     if data[0] != 0xFF:
         sys.stderr.write('invalid header\n')
         return -1
