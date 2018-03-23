@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IP_FILE='/home/pi/ext.pi'
+IP_FILE='/home/pi/ext.ip'
 
 ip=$(curl -s -m 5 'http://ipecho.net/plain')
 
