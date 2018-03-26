@@ -18,32 +18,30 @@ def read_env_data(filename):
 			data.append(json.loads(line))
 	return data
 
-def plot_m(ax, data, metric):
+def plot_m(ax, data, metric, title=''):
 	for d in data:
 		if metric not in d: d[metric] = "0"
-	do_plot(ax, [ d['date'] for d in data ],[ float(d[metric]) for d in data ], metric)
+	do_plot(ax, [ d['date'] for d in data ],[ float(d[metric]) for d in data ], metric, title)
 
-
-def do_plot(ax, x, y, label):
-	#x = np.arange(0, len(y), 1)
+def do_plot(ax, x, y, label, title):
 	ax.plot(x, y, label=label)
+	ax.set(xlabel='time', ylabel=label, title=title)
+	ax.grid()
+	#ax.legend()
 
-def plot_latest_6h(ax, data):
-	data = data[-12:]
+def plot_latest(axes, data, hour):
+	data = data[-hour*2:]
 	for d in data: d['date'] = d['date'].split()[1]
-	plot_m(ax, data, 'temperature')
-	plot_m(ax, data, 'humidity')
-	plot_m(ax, data, 'ch2o')
+	plot_m(axes[0], data, 'temperature', 'Home env monitor')
+	plot_m(axes[1], data, 'humidity')
+	plot_m(axes[2], data, 'ch2o')
 
-fig, ax = plt.subplots()
+fig, axes = plt.subplots(3, 1)
 
 data = read_env_data(SAMPLE_FILE)
 
-plot_latest_6h(ax, data)
+plot_latest(axes, data, 6)
 
-ax.set(xlabel='DateTime', ylabel='Env', title='Home Env Monitor')
-ax.grid()
-ax.legend()
 
 plt.show()
 #fig.savefig('env.png')
