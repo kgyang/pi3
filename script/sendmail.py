@@ -26,7 +26,7 @@ def send_mail(to, subject, msg):
         server.sendmail(fromaddr, toaddrs, mail_msg.as_string())
         res = True
     except:
-        print('send mail to ' + to ' fail: ', sys.exc_info()[0])
+        sys.stderr.write('send mail to ' + to + ' fail: '+ str(sys.exc_info()[0]) + '\n')
         res = False
     finally:
         server.quit()
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     for o, a in optlist:
         if o == '-s': subject = a
     if do_help:
-        print 'Usage:', sys.argv[0], '<-s subject> <to>...'
+        sys.stderr.write('Usage: '+ sys.argv[0] + ' <-s subject> <to>...\n')
         sys.exit(1)
     msg = ''
     while True:

@@ -176,11 +176,12 @@ static domain_name_servers=192.168.1.1
 kern.warn /var/log/kern.log
 
 #install matplotlib to plot env data
-mkdir -p ~/.pip
-echo '
+sudo mkdir -p /root/.pip
+sudo vi /root/.pip/pip.conf
+
+insert
 [global]
 index-url = https://pypi.tuna.tsinghua.edu.cn/simple
-' > ~/.pip/pip.conf
-pip install matplotlib
 
+sudo pip install matplotlib
 
