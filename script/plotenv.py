@@ -18,6 +18,12 @@ def read_env_data(filename):
 			data.append(json.loads(line))
 	return data
 
+
+def plot_env(axes, data):
+	plot_m(axes[0], data, 'temperature', 'Home env monitor')
+	plot_m(axes[1], data, 'humidity')
+	plot_m(axes[2], data, 'ch2o')
+
 def plot_m(ax, data, metric, title=''):
 	for d in data:
 		if metric not in d: d[metric] = "0"
@@ -27,20 +33,30 @@ def do_plot(ax, x, y, label, title):
 	ax.plot(x, y, label=label)
 	ax.set(xlabel='time', ylabel=label, title=title)
 	ax.grid()
+	n =  len(x)
+	ax.set_xticks([ x[int(i*n/6)] for i in range(0, 6) ])
 	#ax.legend()
 
-def plot_latest(axes, data, hour):
+def plot_latest_hour(axes, data, hour):
 	data = data[-hour*2:]
 	for d in data: d['date'] = d['date'].split()[1]
-	plot_m(axes[0], data, 'temperature', 'Home env monitor')
-	plot_m(axes[1], data, 'humidity')
-	plot_m(axes[2], data, 'ch2o')
+	plot_env(axes, data)
+
+def plot_latest_day(axes, data, day):
+	data = data[-day*48:]
+	plot_env(axes, data)
+
+def plot_latest_month(axes, data, month):
+	data = data[-month*48*30:]
+	plot_env(axes, data)
 
 fig, axes = plt.subplots(3, 1)
 
 data = read_env_data(SAMPLE_FILE)
 
-plot_latest(axes, data, 6)
+#plot_latest_hour(axes, data, 6)
+#plot_latest_day(axes, data, 6)
+plot_latest_month(axes, data, 6)
 
 
 plt.show()
