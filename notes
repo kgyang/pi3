@@ -185,3 +185,7 @@ index-url = https://pypi.tuna.tsinghua.edu.cn/simple
 
 sudo pip install matplotlib
 
+# a cron job of reporting external ip always does not work. The reason for failure is that the script read mail server/account information from environment variables when are exported in bash profile. Cron job does not automatically import such profile, so there're no such environment variables in cron job of reporting external ip. The way to fix this issue is that importing profile in crontab:
+5    * * * * . /home/pi/.my_profile; /home/pi/pi3/script/reportip.sh
+#note that this profile just contain necessary environment variables, it should not be .profile directly.
+
