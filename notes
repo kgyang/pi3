@@ -189,3 +189,33 @@ sudo pip install matplotlib
 5    * * * * . /home/pi/.my_profile; /home/pi/pi3/script/reportip.sh
 #note that this profile just contain necessary environment variables, it should not be .profile directly.
 
+
+#2019-1-17
+# start frps service
+# download frp from https://github.com/fatedier/frp/releases/download/v0.23.1/frp_0.23.1_linux_arm.tar.gz
+mkdir tools
+cp frp...gz tools/
+cd tools
+gunzip frp...gz
+ln -s frp.../frps frps
+ln -s frp.../frps.ini frps.ini
+cat '
+[common]
+bind_port = 5938
+token = xxxxx' > frps.ini
+#use 5938 to simulate teamviewer server
+mkdir -p ~/.config/systemd/user
+cd ~/.config/systemd/user
+echo '
+[Unit]
+Description=A frps server
+
+[Service]
+ExecStart=/home/pi/tools/frps -c /home/pi/tools/frps.ini
+
+[Install]
+WantedBy=default.target
+' > frps.service
+systemctl --user enable frps.service
+systemctl --user start frps.service
+
