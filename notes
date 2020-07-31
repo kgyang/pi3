@@ -219,3 +219,9 @@ WantedBy=default.target
 systemctl --user enable frps.service
 systemctl --user start frps.service
 
+# change hdmi setting to 1920x1080p
+/boot/config.txt
+hdmi_mode=16
+
+# to make font size larger
+sudo dpkg-reconfigure console-setup
