@@ -1,0 +1,4 @@
+alias ll='ls -l'
+alias ltr='ls -ltr'
+alias vi='vim'
+

@@ -6,8 +6,8 @@ import numpy as np
 import json
 
 
-#SAMPLE_FILE='/home/pi/env_sample_data.txt'
-SAMPLE_FILE='env_sample_data.txt'
+SAMPLE_FILE='/home/pi/env_sample_data.txt'
+#SAMPLE_FILE='env_sample_data.txt'
 
 def read_env_data(filename):
 	data = list()
